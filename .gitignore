@@ -1,0 +1,31 @@
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Vivado / XSim / Vitis build artifacts
+xsim.dir/
+*.log
+*.jou
+*.pb
+*.wdb
+*.Xil/
+*.dcp
+*.bit
+*.pdi
+*.xsa
+*.ltx
+*.rpt
+vivado_build/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Generated plots & reports (keep figures in session artifacts or release attachments)
+*.png
+*.jpg
+*.jpeg
+*.pdf

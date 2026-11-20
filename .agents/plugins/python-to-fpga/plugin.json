@@ -1,0 +1,12 @@
+{
+  "name": "python-to-fpga",
+  "displayName": "Python-to-FPGA Bitstream",
+  "description": "Disciplined Python golden-reference to synthesizable SystemVerilog, Vivado XSim co-simulation, timing closure, and FPGA bitstream workflow with fast-loop/slow-gate guardrails and lessons learned.",
+  "version": "1.0.0",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Design a new DSP block starting from Stage 1 Python golden model and fixed-point verification",
+    "Run Stage 2B static lint and Stage 2C unit XSim co-simulation against Python golden vectors",
+    "Prepare Vivado IPI block design wrappers, CDC constraints, and tiered synth/impl/bitstream scripts"
+  ]
+}
