@@ -1,6 +1,6 @@
 # Python-to-FPGA Bitstream Template & Agent Plugin
 
-A ready-to-use **GitHub Template Repository** + **Antigravity Plugin** (`python-to-fpga`) implementing **Path 2: Python Golden Reference -> Synthesizable SystemVerilog RTL -> Vivado Verification -> FPGA Bitstream**.
+A ready-to-use **GitHub Template Repository** + **Antigravity Plugin** (`python-to-fpga`) implementing **Path 2: SPEC.md Requirements -> Python Golden Reference -> Synthesizable SystemVerilog RTL -> Vivado Verification -> FPGA Bitstream**.
 
 Originally battle-tested while delivering a timing-closed 5G NR O-RAN vDU bitstream on AMD Zynq UltraScale+ (`ZCU102 xczu9eg`, `245.761 MHz`, 10GBASE-R XGMII + 8-lane JESD204C TX), this template extracts the domain-agnostic engineering workflow, Vivado Tcl/XDC recipes, and pitfalls catalog into a clean starter kit with a **runnable 15-tap symmetric FIR canary block (`canary_fir`)**.
 
@@ -51,6 +51,7 @@ vivado -mode batch -nojournal -nolog -source vivado/build_bitstream.tcl -tclargs
 
 | Stage | Target / Command | Verified Result |
 | :--- | :--- | :--- |
+| **Stage 0** | [SPEC.md](SPEC.md) (Requirements Specification) | `APPROVED` canary baseline (15-tap symmetric Q1.15 FIR, ZCU102 @ `245.761 MHz`, AXI4-Lite/Stream spec) |
 | **Stage 1** | `python/canary_fir_golden.py` + `generate_canary_vectors.py` | PASS (`DC=-0.0003 dB`, `Stop=-56.93 dB`, `Nyq=-45.85 dB`, `Float-vs-Fixed MaxErr=0.5000 LSB`, 5 `.mem` files) |
 | **Stage 2B** | `sim/run_lint.bat` (`xvlog -sv` + `synth_design -lint`) | PASS (`0` errors, `0` critical warnings, `0` linter violations across RTL + BD wrapper) |
 | **Stage 2C** | `sim/run_sim_canary.bat` (4 scenarios, bubbles + backpressure) | `ALL TESTS PASSED (0 ERRORS)` (`VERSION=0x46495231`, 256 default, 256 custom AXI-Lite, 32 bypass) |
@@ -60,7 +61,7 @@ vivado -mode batch -nojournal -nolog -source vivado/build_bitstream.tcl -tclargs
 
 ## Reusing the Bundled Agent Plugin
 
-This template ships an Antigravity Plugin at [`.agents/plugins/python-to-fpga/`](.agents/plugins/python-to-fpga/) containing always-on Stage 1–2F guardrails (`rules/AGENTS.md`), the step-by-step skill (`SKILL.md`), references (`lessons_learned.md`, `vivado_recipes.md`), and a new-block generator (`scaffold_block.py`).
+This template ships an Antigravity Plugin at [`.agents/plugins/python-to-fpga/`](.agents/plugins/python-to-fpga/) containing always-on Stage 0–2F guardrails (`rules/AGENTS.md`), the step-by-step skill (`SKILL.md`), references (`spec_template.md`, `lessons_learned.md`, `vivado_recipes.md`), and a new-block generator (`scaffold_block.py`).
 
 ### Option A — Antigravity (Automatic Per-Repository)
 Clone or instantiate this template and open it in Antigravity. Workspace plugins under `.agents/plugins/` are discovered automatically—no setup required.
@@ -84,7 +85,7 @@ Copy `.agents/plugins/python-to-fpga/skills/python-to-bitstream/` into your tool
 - **OpenCode:** `.opencode/skills/python-to-bitstream/` (or `~/.config/opencode/skills/`)
 
 ### Scaffolding Your Own DSP Block
-Use the bundled CLI helper to generate Stage 1 golden, vector exporter, Stage 2A SV starter, Stage 2C testbench, and XSim scripts in one step:
+First complete **Stage 0** by collaboratively writing and agreeing on all items in `SPEC.md` (starting from [`spec_template.md`](.agents/plugins/python-to-fpga/skills/python-to-bitstream/references/spec_template.md)). Once `SPEC.md` is approved, use the bundled CLI helper to generate Stage 1 golden, vector exporter, Stage 2A SV starter, Stage 2C testbench, and XSim scripts in one step:
 
 ```powershell
 py .agents/plugins/python-to-fpga/skills/python-to-bitstream/scripts/scaffold_block.py --block my_dsp --repo . --magic MDSP
@@ -100,18 +101,20 @@ python-to-fpga-template/
 │   ├── plugin.json
 │   ├── README.md
 │   ├── assets/logo.svg
-│   ├── rules/AGENTS.md               # Always-on Stage 1-2F fast-loop & hygiene rules
+│   ├── rules/AGENTS.md               # Always-on Stage 0-2F fast-loop & hygiene rules
 │   └── skills/python-to-bitstream/
 │       ├── SKILL.md
 │       ├── references/
+│       │   ├── spec_template.md      # Stage 0 collaborative SPEC.md template & agreement checklist
 │       │   ├── lessons_learned.md    # 13 real Stage 1->2F failure modes & preventive checks
 │       │   └── vivado_recipes.md     # Copy-pasteable Tcl, IPI wrapper, XDC, XSDB recipes
-│       └── scripts/scaffold_block.py # Starter generator for new DSP blocks
+│       └── scripts/scaffold_block.py # Starter generator for new DSP blocks (post-Stage 0)
 ├── AGENTS.md                         # Repo defaults (part/clock) + pointer to plugin
 ├── README.md
+├── SPEC.md                           # Stage 0 agreed requirements spec (pre-filled canary baseline)
 ├── .gitignore                        # Ignores Vivado/XSim logs, checkpoints, .bit, .xsa, figures
 ├── docs/
-│   └── PLAYBOOK.md                   # Human Stage 1->2F playbook & board adaptation guide
+│   └── PLAYBOOK.md                   # Human Stage 0->2F playbook & board adaptation guide
 ├── python/
 │   ├── canary_fir_golden.py          # Float + bit-exact fixed-point 15-tap symmetric FIR model
 │   └── generate_canary_vectors.py    # 256-sample Q1.15 stimulus & golden .mem vector exporter

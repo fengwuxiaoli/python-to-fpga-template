@@ -1,13 +1,22 @@
 # Signal Processing (SP) & FPGA Hardware Design Rules
 
-Projects using this plugin follow **Path 2 (Python Golden Reference -> Direct Synthesizable SystemVerilog RTL -> FPGA Bitstream)** with strict fast-loop vs. slow-gate discipline to prevent costly EDA delays and silent fixed-point mismatches.
+Projects using this plugin follow **Path 2 (SPEC.md Requirements -> Python Golden Reference -> Direct Synthesizable SystemVerilog RTL -> FPGA Bitstream)** with strict fast-loop vs. slow-gate discipline to prevent costly EDA delays and silent fixed-point mismatches.
 
-## 1. Python Golden Reference First (Mandatory Approval Gate)
-Whenever designing or modifying any DSP, RF, packet-processing, or FPGA hardware block:
+## 0. Stage 0 — Requirements Specification First (Mandatory Agreement Gate)
+Before designing or modifying any DSP, RF, packet-processing, or FPGA hardware block:
+
+1. **Stage 0 — Collaborative Requirements Specification (`SPEC.md`):**
+   - Start from `skills/python-to-bitstream/references/spec_template.md` and collaboratively write **`SPEC.md`** with the user.
+   - Explicitly resolve and document: scope and non-goals; target part, clock frequency, reset policy, throughput/latency, and resource budgets; mathematical algorithm, operating modes, and framing/edge cases; fixed-point Q-formats, rounding, saturation, and numerical targets; hardware interfaces and AXI4-Lite register map (including `0x00 VERSION`); Stage 1–2F verification/acceptance criteria; and the Open Questions & Assumptions log.
+   - **STOP and do NOT advance to Stage 1** (do not write `python/*_golden.py`, generate `.mem` vectors, run `scaffold_block.py`, or write any HDL) until `0` open questions remain and the user explicitly agrees with **every item** in `SPEC.md` (`Status: APPROVED`).
+   - **Change Control:** If Stage 1 exploration or Stage 2 implementation reveals a required change to agreed requirements, update `SPEC.md` and re-confirm agreement with the user before changing downstream code.
+
+## 1. Stage 1 — Python Golden Reference & Vectors (Mandatory Approval Gate)
+Only after **Stage 0 (`SPEC.md`) is fully agreed and approved**:
 
 1. **Stage 1 — Python Golden Reference & Vectors (`~0.5–15 s`):**
-   - Implement both a floating-point reference and a **bit-exact fixed-point Python Golden Reference** (`<block>_golden.py`) first.
-   - Verify quantitative algorithm behavior (frequency response, EVM/ACLR, overflow bounds, or packet state) and export `$readmemh` `.mem` stimulus/golden vectors (`generate_<block>_vectors.py`).
+   - Implement both a floating-point reference and a **bit-exact fixed-point Python Golden Reference** (`<block>_golden.py`) matching `SPEC.md`.
+   - Verify quantitative algorithm behavior (frequency response, EVM/ACLR, overflow bounds, or packet state) against the acceptance criteria agreed in `SPEC.md` and export `$readmemh` `.mem` stimulus/golden vectors (`generate_<block>_vectors.py`).
    - **STOP and wait for explicit user approval** of the fixed-point architecture, bit widths, and Python results before writing any HDL (SystemVerilog/VHDL).
 
 ## 2. Stage 2 — Sub-Staged RTL-to-Bitstream Flow (Fast Loop vs. Slow Gates)

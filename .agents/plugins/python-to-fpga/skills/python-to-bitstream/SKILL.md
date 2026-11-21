@@ -1,30 +1,35 @@
 ---
 name: python-to-bitstream
 description: >-
-  Guides an end-to-end Python golden-reference to synthesizable SystemVerilog,
-  Vivado static lint, XSim co-simulation, OOC synthesis, IPI Block Design,
-  timing closure, and FPGA bitstream bring-up workflow. Use whenever designing
-  new FPGA/DSP blocks, verifying RTL against Python .mem vectors, fixing Vivado
-  build/timing/XSim issues, or generating Zynq bitstreams and JTAG bring-up scripts.
+  Guides an end-to-end FPGA hardware design workflow starting from Stage 0
+  collaborative SPEC.md requirements sign-off through Python golden-reference
+  modeling, synthesizable SystemVerilog, Vivado static lint, XSim co-simulation,
+  OOC synthesis, IPI Block Design, timing closure, and FPGA bitstream bring-up.
+  Use whenever designing new FPGA/DSP blocks, drafting SPEC.md requirements,
+  verifying RTL against Python .mem vectors, fixing Vivado build/timing/XSim
+  issues, or generating Zynq bitstreams and JTAG bring-up scripts.
 ---
 
 # Python-to-Bitstream Workflow Runbook
 
 ## Overview
-Follow this staged **Path 2 (Python Golden -> Direct SystemVerilog RTL -> Bitstream)** runbook whenever creating or modifying FPGA DSP/hardware modules. Always enforce fast inner loops (**Stage 1, 2B, 2C, 2E-1**) before slow top-level gates (**Stage 2D, 2E-2, 2E-3, 2F**).
+Follow this staged **Path 2 (SPEC.md Requirements -> Python Golden -> Direct SystemVerilog RTL -> Bitstream)** runbook whenever creating or modifying FPGA DSP/hardware modules. Always complete **Stage 0 (`SPEC.md` agreement)** before modeling, and enforce fast inner loops (**Stage 1, 2B, 2C, 2E-1**) before slow top-level gates (**Stage 2D, 2E-2, 2E-3, 2F**).
 
 ## Prerequisites
 - **Python 3.10+** (pure stdlib preferred for golden verification; avoid external dependencies where simple math suffices)
 - **AMD Vivado / XSDB CLI** (`xvlog`, `xelab`, `xsim`, `vivado`, `xsdb`)
 - **Optional MCP Tools:** If `vivado` or `vivado-doc-search` MCP servers are active, use `vivado-doc-search` to check UltraScale+/7-series primitive and IP parameters before Stage 2A/2E authoring. Always ensure batch scripts in `sim/` and `vivado/` work standalone without MCP.
 
-Before writing any RTL (Stage 2A) or Vivado integration Tcl/XDC (Stage 2E), read:
+Before writing `SPEC.md` (Stage 0), RTL (Stage 2A), or Vivado integration Tcl/XDC (Stage 2E), read:
+- [references/spec_template.md](references/spec_template.md) — Stage 0 collaborative `SPEC.md` template & agreement checklist
 - [references/lessons_learned.md](references/lessons_learned.md) — Failure modes & preventive gates
 - [references/vivado_recipes.md](references/vivado_recipes.md) — Parameterized Tcl, IPI wrapper, XDC, and XSDB snippets
 
 ---
 
 ## Scaffolding a New DSP Block
+
+**Prerequisite:** Run `scaffold_block.py` **only after Stage 0 (`SPEC.md`) is fully agreed and approved** by the user.
 
 To avoid missing test harnesses or inconsistent file layout, scaffold every new block with [scripts/scaffold_block.py](scripts/scaffold_block.py):
 
@@ -36,10 +41,23 @@ py <skill_dir>/scripts/scaffold_block.py --block <snake_case_name> --repo . [--m
 
 ## Stage-by-Stage Execution Checklist
 
+### Stage 0 — Collaborative Requirements Specification (`SPEC.md`)
+1. Copy or start from [references/spec_template.md](references/spec_template.md) and co-author **`SPEC.md`** with the user. Do **not** silently assume ambiguous requirements.
+2. Explicitly discuss and resolve all 7 sections:
+   - Scope, goals, and non-goals
+   - Target part/board, clock frequency, reset policy (`rst_n` vs. reset-free SRL/DSP), throughput (`II`), latency, and resource budgets
+   - Mathematical algorithm, operating modes (normal, bypass, runtime reconfiguration), and framing/`TLAST`/flush behavior
+   - Fixed-point bit widths/Q-formats, rounding mode, saturation/overflow rules, and quantitative pass/fail metrics
+   - AXI4-Stream / AXI4-Lite hardware interfaces and register map (including `0x00 RO VERSION` 4-byte ASCII magic ID)
+   - Stage 1 -> Stage 2F verification and acceptance criteria
+   - Open Questions & Assumptions log (`0` `OPEN` rows allowed at sign-off)
+3. Update the `Stage 0 Sign-Off Gate & Agreement Checklist` in `SPEC.md` as items are finalized.
+4. **EXIT GATE (MANDATORY — HARD STOP):** Present the completed `SPEC.md` to the user and **wait for explicit agreement on every item** (`Status: APPROVED`) before running `scaffold_block.py`, creating `python/*_golden.py`, or advancing to Stage 1. If downstream work requires changing an agreed requirement, revise `SPEC.md` and re-confirm agreement first.
+
 ### Stage 1 — Python Golden Reference & `.mem` Vectors (`~0.5–15 s`)
-1. Implement floating-point and **bit-exact fixed-point** functions in `python/<block>_golden.py`.
+1. Implement floating-point and **bit-exact fixed-point** functions in `python/<block>_golden.py` matching the approved `SPEC.md`.
    - Match integer arithmetic exactly: right-shift rounding `(acc + (1 << (F-1))) >> F` maps 1:1 to SystemVerilog signed `>>>` (both round toward negative infinity on ties, unlike `int(x)` truncation).
-2. Add an executable self-test verifying passband/stopband metrics, fixed-vs-float error bound, and overflow/saturation cases.
+2. Add an executable self-test verifying the quantitative metrics agreed in `SPEC.md` (passband/stopband, fixed-vs-float error bound, and overflow/saturation cases).
 3. Export 2's-complement `$readmemh` files (`val & ((1 << WIDTH) - 1)`) via `python/generate_<block>_vectors.py` into `test_vectors/`.
 4. **EXIT GATE (MANDATORY):** Present the Python results/plots and fixed-point widths to the user and **wait for explicit approval** before creating or editing `.sv` files.
 

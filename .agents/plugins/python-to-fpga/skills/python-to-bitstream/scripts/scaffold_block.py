@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Scaffold a new DSP block across Stage 1 (Python) -> Stage 2A (SV) -> Stage 2C (XSim).
 
+Run only after Stage 0 (`SPEC.md`) is agreed and approved.
+
 Creates:
   python/<block>_golden.py
   python/generate_<block>_vectors.py
@@ -20,7 +22,10 @@ import sys
 from pathlib import Path
 
 
-GOLDEN_TEMPLATE = '''"""Stage 1 Python Golden Reference for `{block}`."""
+GOLDEN_TEMPLATE = '''"""Stage 1 Python Golden Reference for `{block}`.
+
+Implements agreed requirements in `SPEC.md` (Stage 0).
+"""
 
 from __future__ import annotations
 
@@ -92,6 +97,7 @@ if __name__ == "__main__":
 
 RTL_TEMPLATE = '''// ==============================================================================
 // Stage 2A Synthesizable SystemVerilog Starter for `{block}`
+// Implements agreed requirements in SPEC.md (Stage 0) and python/{block}_golden.py (Stage 1).
 // Remember Lessons Learned:
 //   - Keep data pipelines/SRL chains reset-free (`= '{{default: '0}}`).
 //   - Put `rst_n` only on valid/control registers and AXI4-Lite registers.
@@ -398,7 +404,9 @@ VIVADO_BIN="${{VIVADO_BIN:-$(dirname "$(command -v vivado)")}}"
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Scaffold a DSP block across Stage 1 -> 2A -> 2C.")
+    parser = argparse.ArgumentParser(
+        description="Scaffold a DSP block across Stage 1 -> 2A -> 2C (run after Stage 0 SPEC.md approval)."
+    )
     parser.add_argument("--block", required=True, help="Snake_case block name (e.g. my_filter)")
     parser.add_argument("--repo", default=".", help="Target repository root path")
     parser.add_argument("--magic", default=None, help="4-char ASCII VERSION ID (default: first 4 chars upper)")

@@ -1,18 +1,21 @@
 # Python-to-FPGA Engineering Playbook
 
-This playbook documents **Path 2 (Python Golden Reference -> Direct SystemVerilog RTL -> Bitstream)**—a fast, deterministic methodology for turning DSP algorithms into timing-closed AMD/Xilinx FPGA bitstreams while keeping AI agents and engineers out of 30–90 minute EDA debugging traps.
+This playbook documents **Path 2 (SPEC.md Requirements -> Python Golden Reference -> Direct SystemVerilog RTL -> Bitstream)**—a fast, deterministic methodology for turning DSP algorithms into timing-closed AMD/Xilinx FPGA bitstreams while keeping AI agents and engineers out of 30–90 minute EDA debugging traps.
 
 It was extracted from an end-to-end 5G NR O-RAN vDU design deployed on an AMD Zynq UltraScale+ ZCU102 (`xczu9eg-ffvb1156-2-e` @ `245.761 MHz`), and comes pre-wired with a working 15-tap symmetric FIR canary block (`canary_fir`) so you can validate your local toolchain in minutes.
 
 ---
 
-## 1. End-to-End Stage 1 → 2F Pipeline
+## 1. End-to-End Stage 0 → 2F Pipeline
 
-The core principle is **strict fast-loop vs. slow-gate separation**: catch 99% of arithmetic, FSM, and syntax bugs in seconds (`Stage 1`, `2B`, `2C`) before ever invoking Vivado block design synthesis or Place & Route (`2E-2`, `2E-3`).
+The core principle is **explicit Stage 0 specification agreement + strict fast-loop vs. slow-gate separation**: align on every requirement in `SPEC.md` before modeling, then catch 99% of arithmetic, FSM, and syntax bugs in seconds (`Stage 1`, `2B`, `2C`) before ever invoking Vivado block design synthesis or Place & Route (`2E-2`, `2E-3`).
 
 ```mermaid
 flowchart TD
-    S1["Stage 1: Python Golden Model & Vectors (~1-15 s)"] --> GATE{"Human Approval Gate"}
+    S0["Stage 0: Collaborative Requirements Spec (SPEC.md)"] --> GATE0{"All SPEC.md Items Agreed?"}
+    GATE0 -->|"Revise / Resolve Open Items"| S0
+    GATE0 -->|"SPEC.md Approved"| S1["Stage 1: Python Golden Model & Vectors (~1-15 s)"]
+    S1 --> GATE{"Human Approval Gate"}
     GATE -->|"Revise spec/fixed-point"| S1
     GATE -->|"Approved"| S2A["Stage 2A: Synthesizable SystemVerilog RTL"]
     S2A --> S2B["Stage 2B: xvlog + synth_design -lint (~15-60 s)"]
@@ -35,7 +38,8 @@ flowchart TD
 
 | Stage | Purpose | Typical Runtime | Mandatory Exit Criteria |
 | :--- | :--- | :---: | :--- |
-| **Stage 1** | Float vs. fixed-point Python model + `$readmemh` vectors | `~1–15 s` | Numerical checks pass (`<= 1–2` LSB fixed-point error); **explicit human sign-off** before any RTL |
+| **Stage 0** | Co-author [`SPEC.md`](../SPEC.md) (scope, target/clock/budget, math, fixed-point, interfaces/regmap, verification plan) from [`spec_template.md`](../.agents/plugins/python-to-fpga/skills/python-to-bitstream/references/spec_template.md) | Interactive / Collaborative | `0` open questions; **explicit mutual agreement on every item in `SPEC.md`** (`Status: APPROVED`) before any Python or RTL |
+| **Stage 1** | Float vs. fixed-point Python model + `$readmemh` vectors matching `SPEC.md` | `~1–15 s` | Numerical checks pass `SPEC.md` thresholds (`<= 1–2` LSB fixed-point error); **explicit human sign-off** before any RTL |
 | **Stage 2A** | Hand-authored, pipelined SV RTL (`rtl/*.sv`) + AXI4-Lite `VERSION` | Manual / `1–10 min` | Reset-free data delay lines, registered DSP/BRAM stages, skid buffers on async/subsystem ports |
 | **Stage 2B** | `xvlog -sv` + Vivado `synth_design -lint` | `~15–60 s` | `0` syntax errors, `0` latch inferences, `0` multi-driven nets; lints Verilog-2001 BD wrapper too |
 | **Stage 2C** | Per-block XSim co-simulation against `.mem` vectors | `~10–45 s` | `0` mismatches across randomized `tvalid` bubbles, `tready` stalls, and AXI-Lite config scenarios |
@@ -49,7 +53,7 @@ flowchart TD
 
 ## 2. Adding a New DSP Block
 
-Never start by creating an empty `.sv` file. Always scaffold the full Stage 1 -> Stage 2C slice together using [`scaffold_block.py`](../.agents/plugins/python-to-fpga/skills/python-to-bitstream/scripts/scaffold_block.py):
+Never start by creating an empty `.sv` file—or even writing Stage 1 Python code—before agreeing on requirements. First complete **Stage 0 (`SPEC.md`)**, then scaffold the full Stage 1 -> Stage 2C slice together using [`scaffold_block.py`](../.agents/plugins/python-to-fpga/skills/python-to-bitstream/scripts/scaffold_block.py):
 
 ```powershell
 py .agents/plugins/python-to-fpga/skills/python-to-bitstream/scripts/scaffold_block.py --block my_filter --repo . --magic MYF1
@@ -62,11 +66,12 @@ This creates:
 4. `tb/tb_my_filter.sv`, `sim/run_sim_my_filter.bat`, `sim/run_sim_my_filter.sh` — Cross-platform Stage 2C XSim runners with explicit `xsimk.exe` checks and cleanup.
 
 **Workflow for every new block:**
-1. Implement the math + fixed-point bit-exact model in `python/<block>_golden.py`. Run it and inspect metrics/plots.
-2. Generate `.mem` vectors via `python/generate_<block>_vectors.py`.
-3. **Stop for review/approval** of the fixed-point bit widths, rounding mode, and resource strategy.
-4. Implement `rtl/<block>.sv`, add it to `vivado/run_lint.tcl` and `sim/run_lint.*`, and run `sim/run_lint.*` (Stage 2B).
-5. Run `sim/run_sim_<block>.*` until `0 ERRORS` (Stage 2C), then benchmark with Stage 2E-1 OOC synthesis before wiring into a Block Design.
+1. **Stage 0:** Copy [`spec_template.md`](../.agents/plugins/python-to-fpga/skills/python-to-bitstream/references/spec_template.md) to `SPEC.md` and co-author all sections (scope, part/clock/budget, algorithm, fixed-point formats, register map, verification criteria, and open questions) until **both parties agree on every item** (`Status: APPROVED`).
+2. Run `scaffold_block.py` to generate the Stage 1–2C file layout, then implement the math + fixed-point bit-exact model in `python/<block>_golden.py` matching `SPEC.md`. Run it and inspect metrics/plots.
+3. Generate `.mem` vectors via `python/generate_<block>_vectors.py`.
+4. **Stop for review/approval** of the fixed-point bit widths, rounding mode, and resource strategy (updating `SPEC.md` if any requirements changed).
+5. Implement `rtl/<block>.sv`, add it to `vivado/run_lint.tcl` and `sim/run_lint.*`, and run `sim/run_lint.*` (Stage 2B).
+6. Run `sim/run_sim_<block>.*` until `0 ERRORS` (Stage 2C), then benchmark with Stage 2E-1 OOC synthesis before wiring into a Block Design.
 
 ---
 
