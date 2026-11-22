@@ -20,10 +20,11 @@ Follow this staged **Path 2 (SPEC.md Requirements -> Python Golden -> Direct Sys
 - **AMD Vivado / XSDB CLI** (`xvlog`, `xelab`, `xsim`, `vivado`, `xsdb`)
 - **Optional MCP Tools:** If `vivado` or `vivado-doc-search` MCP servers are active, use `vivado-doc-search` to check UltraScale+/7-series primitive and IP parameters before Stage 2A/2E authoring. Always ensure batch scripts in `sim/` and `vivado/` work standalone without MCP.
 
-Before writing `SPEC.md` (Stage 0), RTL (Stage 2A), or Vivado integration Tcl/XDC (Stage 2E), read:
+Before writing `SPEC.md` (Stage 0), RTL (Stage 2A), Vivado integration Tcl/XDC (Stage 2E), or `INTEGRATION.md` (Stage 2F), read:
 - [references/spec_template.md](references/spec_template.md) — Stage 0 collaborative `SPEC.md` template & agreement checklist
 - [references/lessons_learned.md](references/lessons_learned.md) — Failure modes & preventive gates
 - [references/vivado_recipes.md](references/vivado_recipes.md) — Parameterized Tcl, IPI wrapper, XDC, and XSDB snippets
+- [references/integration_template.md](references/integration_template.md) — Stage 2F Software & RTL integration handoff guide template
 
 ---
 
@@ -97,3 +98,4 @@ py <skill_dir>/scripts/scaffold_block.py --block <snake_case_name> --repo . [--m
 ### Stage 2F — Bitstream, Fixed XSA & Hardware Bring-Up
 1. Run `build_bitstream.tcl -tclargs bitstream` to emit `${DESIGN_NAME}.bit` and `write_hw_platform -fixed -include_bit -force`.
 2. Follow **Phase 1** (standalone JTAG `psu_init` -> `fpga` -> `psu_post_config` -> `psu_ps_pl_isolation_removal` -> `psu_ps_pl_reset_config` -> read `VERSION` at `0xA0000000`) via `bringup/jtag_bringup.tcl` before connecting external PHY/RF links in **Phase 2**.
+3. Maintain `sw/<block>_regs.h` / `sw/<block>_regs.py` and `INTEGRATION.md` (from [references/integration_template.md](references/integration_template.md)) covering Track A (SoC/SW) and Track B (RTL/IPI) integration; keep `.bit`, `.xsa`, `.dcp`, `.rpt`, and `.zip` binaries out of Git.

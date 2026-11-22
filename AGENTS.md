@@ -10,12 +10,14 @@ This repository implements **Path 2 (SPEC.md Requirements -> Python Golden Refer
 
 ## Workspace Layout
 - `SPEC.md` — Stage 0 requirements specification (collaboratively agreed & approved before Stage 1; pre-filled for `canary_fir`, see [SPEC.md](SPEC.md))
+- `INTEGRATION.md` — Stage 2F deliverable storage policy plus Software/SoC & FPGA RTL integration guide (see [INTEGRATION.md](INTEGRATION.md))
 - `python/` — Floating-point + bit-exact fixed-point golden models and `.mem` vector generators
 - `rtl/` — Synthesizable SystemVerilog modules (`axis_skid`, `canary_fir_regs`, `canary_fir_core`, `canary_fir_top`)
 - `tb/` — Self-checking SystemVerilog XSim testbenches
 - `test_vectors/` — Hex `.mem` stimulus, coefficients, and golden expected vectors (`$readmemh`)
 - `sim/` — Batch/shell lint (`run_lint.*`) and XSim co-simulation runners (`run_sim_*.*`)
 - `vivado/` — Parameterized Tcl, Verilog-2001 IPI wrappers, XDC timing/CDC constraints, and checkpointed bitstream builders
+- `sw/` — C99 and Python register map headers (`canary_fir_regs.h`, `canary_fir_regs.py`) for Vitis/PetaLinux/PYNQ integration
 - `bringup/` — XSDB JTAG bring-up scripts and Phase 1 / Phase 2 bench verification guides
 - `docs/` — Engineering playbook ([docs/PLAYBOOK.md](docs/PLAYBOOK.md))
 

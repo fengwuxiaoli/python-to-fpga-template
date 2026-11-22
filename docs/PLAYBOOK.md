@@ -47,7 +47,7 @@ flowchart TD
 | **Stage 2E-1** | Out-of-context (`-mode out_of_context`) block synthesis | `~30 s–5 min` | Meets target `WNS >= 0 ns`, expected `DSP48E2` / `SRLC16E` / `BRAM` inference confirmed |
 | **Stage 2E-2** | IPI Block Design + `create_bd_cell` + Top Synth (OOC IP cached) | `~5–30 min` | `validate_bd_design` clean; `impl_cdc.xdc` tagged `USED_IN implementation`; `post_synth.dcp` written |
 | **Stage 2E-3** | Checkpointed P&R (`opt_design`, `place_design`, `route_design`) | `~10–90 min` | `WNS >= 0`, `TNS = 0`, `WHS >= 0`, `THS = 0`, `WPWS >= 0`, 100% routed nets, `0` DRC errors |
-| **Stage 2F** | `write_bitstream` + `write_hw_platform -fixed -include_bit` | `~3–8 min` | Phase 1 JTAG/PS/AXI-Lite `VERSION` readback passes; Phase 2 external I/O/PHY bench passes |
+| **Stage 2F** | `write_bitstream` + `write_hw_platform -fixed -include_bit` + handoff docs | `~3–8 min` | Phase 1 JTAG/PS/AXI-Lite `VERSION` readback passes; Phase 2 external I/O/PHY bench passes; `sw/` register headers & [`INTEGRATION.md`](../INTEGRATION.md) (from [`integration_template.md`](../.agents/plugins/python-to-fpga/skills/python-to-bitstream/references/integration_template.md)) updated |
 
 ---
 
@@ -99,18 +99,19 @@ vivado -mode batch -nojournal -nolog -source vivado/run_ooc_synth.tcl
 
 ---
 
-## 4. Phase 1 vs. Phase 2 Hardware Bring-Up
+## 4. Phase 1 vs. Phase 2 Hardware Bring-Up & Handoff
 
-Never debug algorithmic logic, PS-PL bridges, and external SerDes/RF transceivers at the same time. Always follow [`bringup/README_BRINGUP.md`](../bringup/README_BRINGUP.md):
+Never debug algorithmic logic, PS-PL bridges, and external SerDes/RF transceivers at the same time. Always follow [`bringup/README_BRINGUP.md`](../bringup/README_BRINGUP.md) and [`INTEGRATION.md`](../INTEGRATION.md):
 
 - **Phase 1 — Standalone Board Smoke Test (no external RF/FMC/SFP cables needed):**
   - Configure boot switches to **JTAG mode** (e.g., `SW6 = 0000` on ZCU102).
   - Run [`bringup/jtag_bringup.tcl`](../bringup/jtag_bringup.tcl) via `xsdb`.
   - Verify `psu_init` -> `fpga` -> `psu_post_config` -> `psu_ps_pl_isolation_removal` -> `psu_ps_pl_reset_config` succeeds and `VERSION` at `0xA0000000` reads back the expected 4-byte ASCII ID (`0x46495231` `"FIR1"` for the canary).
-  - Exercise AXI4-Lite registers and PS-to-PL AXI DMA loopback (`MM2S -> IP -> S2MM`) to confirm clocks, resets, and bit-exact silicon output.
+  - Exercise AXI4-Lite registers and PS-to-PL AXI DMA loopback (`MM2S -> IP -> S2MM`) using [`sw/canary_fir_regs.h`](../sw/canary_fir_regs.h) / [`sw/canary_fir_regs.py`](../sw/canary_fir_regs.py) to confirm clocks, resets, and bit-exact silicon output.
 - **Phase 2 — Full System / External I/O Bench Test:**
   - Connect external optical/FMC/clock sources (SFP+, JESD204C FMC, 10 MHz / 1 PPS reference, `SYSREF`).
   - Confirm external PLL locks and link telemetry before evaluating DSP ACLR/EVM on bench analyzers.
+- **Deliverables Handoff:** Keep `.bit`, `.xsa`, `.dcp`, and `.rpt` out of Git (`$FPGA_BUILD_DIR` or external tagged releases) and complete [`INTEGRATION.md`](../INTEGRATION.md) (from [`integration_template.md`](../.agents/plugins/python-to-fpga/skills/python-to-bitstream/references/integration_template.md)) for downstream Track A (SoC/SW) and Track B (RTL/IPI) consumers.
 
 ---
 

@@ -5,6 +5,7 @@ A ready-to-use **GitHub Template Repository** + **Antigravity Plugin** (`python-
 Originally battle-tested while delivering a timing-closed 5G NR O-RAN vDU bitstream on AMD Zynq UltraScale+ (`ZCU102 xczu9eg`, `245.761 MHz`, 10GBASE-R XGMII + 8-lane JESD204C TX), this template extracts the domain-agnostic engineering workflow, Vivado Tcl/XDC recipes, and pitfalls catalog into a clean starter kit with a **runnable 15-tap symmetric FIR canary block (`canary_fir`)**.
 
 > **Human Playbook:** Read [docs/PLAYBOOK.md](docs/PLAYBOOK.md) for the full stage-by-stage workflow, architecture flowchart, and Phase 1 / Phase 2 bring-up methodology.  
+> **Integration Guide:** Read [INTEGRATION.md](INTEGRATION.md) for deliverable storage rules plus Track A (SoC/SW) & Track B (RTL/IPI) integration steps.  
 > **Lessons Learned Catalog:** Read [lessons_learned.md](.agents/plugins/python-to-fpga/skills/python-to-bitstream/references/lessons_learned.md) to avoid the 13 most expensive Python-to-Vivado traps before writing RTL.
 
 ---
@@ -61,7 +62,7 @@ vivado -mode batch -nojournal -nolog -source vivado/build_bitstream.tcl -tclargs
 
 ## Reusing the Bundled Agent Plugin
 
-This template ships an Antigravity Plugin at [`.agents/plugins/python-to-fpga/`](.agents/plugins/python-to-fpga/) containing always-on Stage 0–2F guardrails (`rules/AGENTS.md`), the step-by-step skill (`SKILL.md`), references (`spec_template.md`, `lessons_learned.md`, `vivado_recipes.md`), and a new-block generator (`scaffold_block.py`).
+This template ships an Antigravity Plugin at [`.agents/plugins/python-to-fpga/`](.agents/plugins/python-to-fpga/) containing always-on Stage 0–2F guardrails (`rules/AGENTS.md`), the step-by-step skill (`SKILL.md`), references (`spec_template.md`, `integration_template.md`, `lessons_learned.md`, `vivado_recipes.md`), and a new-block generator (`scaffold_block.py`).
 
 ### Option A — Antigravity (Automatic Per-Repository)
 Clone or instantiate this template and open it in Antigravity. Workspace plugins under `.agents/plugins/` are discovered automatically—no setup required.
@@ -105,40 +106,45 @@ python-to-fpga-template/
 │   └── skills/python-to-bitstream/
 │       ├── SKILL.md
 │       ├── references/
-│       │   ├── spec_template.md      # Stage 0 collaborative SPEC.md template & agreement checklist
-│       │   ├── lessons_learned.md    # 13 real Stage 1->2F failure modes & preventive checks
-│       │   └── vivado_recipes.md     # Copy-pasteable Tcl, IPI wrapper, XDC, XSDB recipes
-│       └── scripts/scaffold_block.py # Starter generator for new DSP blocks (post-Stage 0)
-├── AGENTS.md                         # Repo defaults (part/clock) + pointer to plugin
+│       │   ├── spec_template.md        # Stage 0 collaborative SPEC.md template & agreement checklist
+│       │   ├── integration_template.md # Stage 2F Software & RTL integration handoff template
+│       │   ├── lessons_learned.md      # 13 real Stage 1->2F failure modes & preventive checks
+│       │   └── vivado_recipes.md       # Copy-pasteable Tcl, IPI wrapper, XDC, XSDB recipes
+│       └── scripts/scaffold_block.py   # Starter generator for new DSP blocks (post-Stage 0)
+├── AGENTS.md                           # Repo defaults (part/clock) + pointer to plugin
 ├── README.md
-├── SPEC.md                           # Stage 0 agreed requirements spec (pre-filled canary baseline)
-├── .gitignore                        # Ignores Vivado/XSim logs, checkpoints, .bit, .xsa, figures
+├── SPEC.md                             # Stage 0 agreed requirements spec (pre-filled canary baseline)
+├── INTEGRATION.md                      # Stage 2F deliverable policy + SW & RTL integration guide
+├── .gitignore                          # Ignores Vivado/XSim logs, checkpoints, .bit, .xsa, figures
 ├── docs/
-│   └── PLAYBOOK.md                   # Human Stage 0->2F playbook & board adaptation guide
+│   └── PLAYBOOK.md                     # Human Stage 0->2F playbook & board adaptation guide
 ├── python/
-│   ├── canary_fir_golden.py          # Float + bit-exact fixed-point 15-tap symmetric FIR model
-│   └── generate_canary_vectors.py    # 256-sample Q1.15 stimulus & golden .mem vector exporter
+│   ├── canary_fir_golden.py            # Float + bit-exact fixed-point 15-tap symmetric FIR model
+│   └── generate_canary_vectors.py      # 256-sample Q1.15 stimulus & golden .mem vector exporter
 ├── rtl/
-│   ├── axis_skid.sv                  # Registered 2-entry AXI4-Stream skid buffer
-│   ├── canary_fir_regs.sv            # AXI4-Lite slave (VERSION=0x46495231 "FIR1", CTRL, STATUS, COEFF[0..7])
-│   ├── canary_fir_core.sv            # Reset-free SRL delay line + symmetric DSP48E2 FIR pipeline
-│   └── canary_fir_top.sv             # Integrates regs + core
+│   ├── axis_skid.sv                    # Registered 2-entry AXI4-Stream skid buffer
+│   ├── canary_fir_regs.sv              # AXI4-Lite slave (VERSION=0x46495231 "FIR1", CTRL, STATUS, COEFF[0..7])
+│   ├── canary_fir_core.sv              # Reset-free SRL delay line + symmetric DSP48E2 FIR pipeline
+│   └── canary_fir_top.sv               # Integrates regs + core
 ├── tb/
-│   └── tb_canary_fir.sv              # Self-checking TB (VERSION, default, AXI-Lite custom coeffs, bypass)
-├── test_vectors/                     # Committed $readmemh golden .mem files
+│   └── tb_canary_fir.sv                # Self-checking TB (VERSION, default, AXI-Lite custom coeffs, bypass)
+├── test_vectors/                       # Committed $readmemh golden .mem files
 ├── sim/
-│   ├── run_lint.bat / run_lint.sh    # Stage 2B xvlog + Vivado synth_design -lint
-│   └── run_sim_canary.bat / .sh      # Stage 2C XSim bit-exact runner + artifact cleanup
+│   ├── run_lint.bat / run_lint.sh      # Stage 2B xvlog + Vivado synth_design -lint
+│   └── run_sim_canary.bat / .sh        # Stage 2C XSim bit-exact runner + artifact cleanup
 ├── vivado/
-│   ├── board_config.tcl              # Centralized PART / BOARD_PART / TARGET_CLK_MHZ / BUILD_DIR
-│   ├── canary_fir_bd_wrapper.v       # Verilog-2001 IPI wrapper with X_INTERFACE_INFO attributes
-│   ├── run_lint.tcl                  # Stage 2B in-memory Vivado lint
-│   ├── run_ooc_synth.tcl             # Stage 2E-1 OOC resource/timing budget
-│   ├── constraints.xdc               # Synthesis + implementation physical/clock constraints template
-│   ├── impl_cdc.xdc                  # USED_IN {implementation} async CDC & reset fanout template
-│   ├── create_bd.tcl                 # Parameterized Zynq MPSoC + ClkWiz + SmartConnect + AXI DMA BD
-│   └── build_bitstream.tcl           # Stage 2E-2/2E-3/2F tiered checkpoint build (synth/impl/bitstream)
+│   ├── board_config.tcl                # Centralized PART / BOARD_PART / TARGET_CLK_MHZ / BUILD_DIR
+│   ├── canary_fir_bd_wrapper.v         # Verilog-2001 IPI wrapper with X_INTERFACE_INFO attributes
+│   ├── run_lint.tcl                    # Stage 2B in-memory Vivado lint
+│   ├── run_ooc_synth.tcl               # Stage 2E-1 OOC resource/timing budget
+│   ├── constraints.xdc                 # Synthesis + implementation physical/clock constraints template
+│   ├── impl_cdc.xdc                    # USED_IN {implementation} async CDC & reset fanout template
+│   ├── create_bd.tcl                   # Parameterized Zynq MPSoC + ClkWiz + SmartConnect + AXI DMA BD
+│   └── build_bitstream.tcl             # Stage 2E-2/2E-3/2F tiered checkpoint build (synth/impl/bitstream)
+├── sw/
+│   ├── canary_fir_regs.h               # C99/Vitis/Linux AXI4-Lite register definitions & MMIO helpers
+│   └── canary_fir_regs.py              # Python/PYNQ AXI4-Lite register map & MMIO helper
 └── bringup/
-    ├── jtag_bringup.tcl              # XSDB JTAG XSA extraction, psu_init, isolation removal, VERSION check
-    └── README_BRINGUP.md             # Phase 1 standalone vs. Phase 2 bench verification checklist
+    ├── jtag_bringup.tcl                # XSDB JTAG XSA extraction, psu_init, isolation removal, VERSION check
+    └── README_BRINGUP.md               # Phase 1 standalone vs. Phase 2 bench verification checklist
 ```

@@ -47,6 +47,7 @@ Only after the user approves Stage 1, execute Stage 2 in order. **Never invoke a
 6. **Stage 2F — Bitstream, Fixed XSA & Hardware Validation:**
    - Generate `.bit` and `write_hw_platform -fixed -include_bit -force` `.xsa` only after clean P&R (`2E-3`).
    - Run Phase 1 standalone board verification (JTAG `psu_init` -> `fpga` -> `psu_post_config` -> `psu_ps_pl_isolation_removal` -> AXI4-Lite `VERSION` readback) before Phase 2 external PHY/RF bench tests.
+   - Deliver `sw/` register headers (`<block>_regs.h` / `<block>_regs.py`) and `INTEGRATION.md` (starting from `skills/python-to-bitstream/references/integration_template.md`) for downstream SW and RTL integrators while keeping `.bit`, `.xsa`, `.dcp`, `.rpt`, and `.zip` archives out of Git.
 
 ## 3. Repository Hygiene & Path Isolation Rules
 - **Isolate Vivado Builds Out-of-Tree:** Never create `.xpr`, `.runs`, or `.cache` directories inside OneDrive-synced folders, paths with spaces, or non-ASCII paths. Default Vivado build artifacts to `%TEMP%` / `/tmp` (overridable via `FPGA_BUILD_DIR`).
